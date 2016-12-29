@@ -6,10 +6,10 @@ declare -i pieces    # number of pieces present on board
 declare -i score=0   # score variable
 declare -i flag_skip # flag that prevents doing more than one operation on
                      # single field in one step
-declare -i moves     # stores number of possible moves to determine if player lost 
+declare -i moves     # stores number of possible moves to determine if player lost
                      # the game
 declare ESC=$'\e'    # escape byte
-declare header="Bash 2048 v1.1 (https://github.com/mydzor/bash2048)"
+declare header="Bash"
 
 declare -i start_time=$(date +%s)
 
@@ -26,14 +26,15 @@ colors[4]=32         # green text
 colors[8]=34         # blue text
 colors[16]=36        # cyan text
 colors[32]=35        # purple text
-colors[64]="33m\033[7"        # yellow background
-colors[128]="32m\033[7"       # green background
-colors[256]="34m\033[7"       # blue background
-colors[512]="36m\033[7"       # cyan background
-colors[1024]="35m\033[7"      # purple background
-colors[2048]="31m\033[7"      # red background (won with default target)
+colors[64]="33" #m\033[7"        # yellow background
+colors[128]="32" #m\033[7"       # green background
+colors[256]="34" #m\033[7"       # blue background
+colors[512]="36" #m\#033[7"       # cyan background
+colors[1024]="35" #m\033[7"      # purple background
+colors[2048]="34" #m\033[7"      # red background (won with default target)
+colors[4096]="33" #m\033[7"      # red background
 
-exec 3>/dev/null     # no logging by default
+exec 3>/dev/null    # no logging by default
 
 trap "end_game 0 1" INT #handle INT signal
 
@@ -59,43 +60,45 @@ function _seq {
 # print currect status of the game, last added pieces are marked red
 function print_board {
   clear
-  printf "$header pieces=$pieces target=$target score=$score\n"
+  printf "$header $target pieces=$pieces  \nScore=$score\n"
   printf "Board status:\n" >&3
   printf "\n"
-  printf '/------'
+  printf '╔══════'
   for l in $(_seq 1 $index_max); do
-    printf '+------'
+    printf '╦══════'
   done
-  printf '\\\n'
+  printf '╗\n'
   for l in $(_seq 0 $index_max); do
-    printf '|'
+    printf '║'
     for m in $(_seq 0 $index_max); do
       if let ${board[l*$board_size+m]}; then
         if let '(last_added==(l*board_size+m))|(first_round==(l*board_size+m))'; then
-          printf '\033[1m\033[31m %4d \033[0m|' ${board[l*$board_size+m]}
+          printf '\033[1m\033[31m %4d \033[0m║' ${board[l*$board_size+m]}
         else
-          printf "\033[1m\033[${colors[${board[l*$board_size+m]}]}m %4d\033[0m |" ${board[l*$board_size+m]}
+          printf "\033[1m\033[${colors[${board[l*$board_size+m]}]}m %4d \033[0m║" ${board[l*$board_size+m]}
         fi
-        printf " %4d |" ${board[l*$board_size+m]} >&3
+        printf " %4d ║" ${board[l*$board_size+m]} >&3
       else
-        printf '      |'
-        printf '      |' >&3
+        printf '      ║'
+        printf '      ║' >&3
       fi
     done
     let l==$index_max || {
-      printf '\n|------'
+      printf '\n╠══════'
       for l in $(_seq 1 $index_max); do
-        printf '+------'
+        printf '╬══════'
       done
-      printf '|\n'
+      printf '║\n'
       printf '\n' >&3
     }
   done
-  printf '\n\\------'
+  #printf '\n\\------'
+  printf '\n╚══════'
   for l in $(_seq 1 $index_max); do
-    printf '+------'
+    #printf '+------'
+    printf '╩══════'
   done
-  printf '/\n'
+  printf '╝\n'
 }
 
 # Generate new piece on the board
@@ -109,7 +112,7 @@ function generate_piece {
   while true; do
     let pos=RANDOM%fields_total
     let board[$pos] || {
-      let value=RANDOM%10?2:4
+      let value=RANDOM%10?2:4:8 &>/dev/null
       board[$pos]=$value
       last_added=$pos
       printf "Generated new piece with value $value at position [$pos]\n" >&3
@@ -125,7 +128,7 @@ function generate_piece {
 #         $2 - recipient piece, this will hold result if moving or joining
 #         $3 - originator piece, after moving or joining this will be left empty
 #         $4 - direction of push, can be either "up", "down", "left" or "right"
-#         $5 - if anything is passed, do not perform the push, only update number 
+#         $5 - if anything is passed, do not perform the push, only update number
 #              of valid moves
 #         $board - original state of the game board
 # outputs:
@@ -151,7 +154,7 @@ function push_pieces {
       let "second=$1*$board_size+(index_max-$2-$3)"
       ;;
   esac
-  let ${board[$first]} || { 
+  let ${board[$first]} || {
     let ${board[$second]} && {
       if test -z $5; then
         board[$first]=${board[$second]}
@@ -166,7 +169,7 @@ function push_pieces {
     return
   }
   let ${board[$second]} && let flag_skip=1
-  let "${board[$first]}==${board[second]}" && { 
+  let "${board[$first]}==${board[second]}" && {
     if test -z $5; then
       let board[$first]*=2
       let "board[$first]==$target" && end_game 1
@@ -190,7 +193,7 @@ function apply_push {
       for k in $(_seq 1 $increment_max); do
         let flag_skip && break
         push_pieces $i $j $k $1 $2
-      done 
+      done
     done
   done
 }
@@ -264,12 +267,12 @@ function reload_game {
 
 function end_game {
   # count game duration
-  end_time=$(date +%s) 
+  end_time=$(date +%s)
   let total_time=end_time-start_time
-  
+
   print_board
   printf "Your score: $score\n"
-  
+
   printf "This game lasted "
 
   `date --version > /dev/null 2>&1`
@@ -278,14 +281,14 @@ function end_game {
   else
       date -u -r ${total_time} +%T
   fi
-  
+
   stty echo
   let $1 && {
     printf "Congratulations you have achieved $target\n"
     exit 0
   }
   let test -z $2 && {
-    read -n1 -p "Do you want to overwrite saved game? [y|N]: "
+    read -n1 -p "Do overwrite saved game? [y|N]: "
     test "$REPLY" = "Y" || test "$REPLY" = "y" && {
       save_game
       printf "\nGame saved. Use -r option next to load this game.\n"
@@ -303,13 +306,11 @@ function end_game {
 function help {
   cat <<END_HELP
 Usage: $1 [-b INTEGER] [-t INTEGER] [-l FILE] [-r] [-h]
-
   -b			specify game board size (sizes 3-9 allowed)
   -t			specify target score to win (needs to be power of 2)
   -l			log debug info into specified file
   -r			reload the previous game
   -h			this help
-
 END_HELP
 }
 
@@ -320,13 +321,13 @@ while getopts "b:t:l:rh" opt; do
     b ) board_size="$OPTARG"
       let '(board_size>=3)&(board_size<=9)' || {
         printf "Invalid board size, please choose size between 3 and 9\n"
-        exit -1 
+        exit -1
       };;
     t ) target="$OPTARG"
       printf "obase=2;$target\n" | bc | grep -e '^1[^1]*$'
       let $? && {
         printf "Invalid target, has to be power of two\n"
-        exit -1 
+        exit -1
       };;
     r ) reload_flag="1";;
     h ) help $0
