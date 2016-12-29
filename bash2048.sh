@@ -10,6 +10,7 @@ declare -i moves     # stores number of possible moves to determine if player lo
                      # the game
 declare ESC=$'\e'    # escape byte
 declare header="Bash"
+#declare header="Bash 2048 v1.1 (https://github.com/mydzor/bash2048)" 
 
 declare -i start_time=$(date +%s)
 
@@ -33,9 +34,7 @@ colors[512]="36" #m\#033[7"       # cyan background
 colors[1024]="35" #m\033[7"      # purple background
 colors[2048]="34" #m\033[7"      # red background (won with default target)
 colors[4096]="33" #m\033[7"      # red background
-
 exec 3>/dev/null    # no logging by default
-
 trap "end_game 0 1" INT #handle INT signal
 
 #simplified replacement of seq command
@@ -112,7 +111,7 @@ function generate_piece {
   while true; do
     let pos=RANDOM%fields_total
     let board[$pos] || {
-      let value=RANDOM%10?2:4:8 &>/dev/null
+      let value=RANDOM%10?2:4 &>/dev/null
       board[$pos]=$value
       last_added=$pos
       printf "Generated new piece with value $value at position [$pos]\n" >&3
